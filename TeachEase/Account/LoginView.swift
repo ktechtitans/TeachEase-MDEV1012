@@ -11,7 +11,9 @@ import FirebaseAuth
 
 struct LoginView: View {
     @State private var userLogin = UserLogin(email: "", password: "")
-    
+    @State private var alertMessage = ""
+    @State private var showAlert = false
+
     var body: some View {
         VStack(spacing: 20) {
             Text("TeachEase")
@@ -19,17 +21,19 @@ struct LoginView: View {
                 .bold()
                 .padding(.top, 50)
                 .padding(.bottom, 130)
-            
+
             TextField("Enter your email", text: $userLogin.email)
                 .padding()
                 .background(Color(.secondarySystemBackground))
                 .cornerRadius(8)
-            
+                .keyboardType(.emailAddress)
+                .autocapitalization(.none)
+
             SecureField("Enter your password", text: $userLogin.password)
                 .padding()
                 .background(Color(.secondarySystemBackground))
                 .cornerRadius(8)
-            
+
             Button(action: {
                 handleLogin()
             }) {
@@ -41,25 +45,31 @@ struct LoginView: View {
                     .cornerRadius(8)
             }
             .padding(.top)
-            
+
             Spacer()
         }
         .padding()
+        .alert(isPresented: $showAlert) {
+            Alert(title: Text("Login Status"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+        }
     }
-    
+
     func handleLogin() {
         // Validate email and password before attempting login
         if userLogin.isValidEmail() && userLogin.isPasswordValid() {
             Auth.auth().signIn(withEmail: userLogin.email, password: userLogin.password) { authResult, error in
                 if let error = error {
-                    print("Login error: \(error.localizedDescription)")
+                    alertMessage = "Login error: \(error.localizedDescription)"
+                    showAlert = true
                 } else {
-                    print("Login successful!")
+                    alertMessage = "Login successful!"
+                    showAlert = true
                     // Navigate to the home page or handle successful login
                 }
             }
         } else {
-            print("Invalid email or password")
+            alertMessage = "Invalid email or password"
+            showAlert = true
         }
     }
 }

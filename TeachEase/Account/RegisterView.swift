@@ -12,6 +12,8 @@ import FirebaseAuth
 struct RegisterView: View {
     @State private var userRegistration = UserRegistration(email: "", password: "", confirmPassword: "")
     @State private var isSignedUp: Bool = false
+    @State private var alertMessage: String = ""
+    @State private var showAlert: Bool = false
     
     var body: some View {
         NavigationStack {
@@ -29,6 +31,8 @@ struct RegisterView: View {
                     .padding(.bottom, 30)
                 
                 TextField("Enter your email", text: $userRegistration.email)
+                    .keyboardType(.emailAddress)
+                    .autocapitalization(.none)
                     .padding()
                     .background(Color(.secondarySystemBackground))
                     .cornerRadius(8)
@@ -66,25 +70,49 @@ struct RegisterView: View {
                 }
                 .padding()
                 
+                // Navigation to HomePageView after successful signup
                 NavigationLink(destination: HomePageView(), isActive: $isSignedUp) {
                     EmptyView()
                 }
             }
             .padding()
+            .alert(isPresented: $showAlert) {
+                Alert(title: Text("Registration Status"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+            }
         }
     }
     
     func handleSignUp() {
-        if userRegistration.isPasswordValid() {
-            Auth.auth().createUser(withEmail: userRegistration.email, password: userRegistration.password) { authResult, error in
-                if let error = error {
-                    print("Error during signup: \(error.localizedDescription)")
-                } else {
-                    isSignedUp = true
-                }
+        // Validate email format
+        if !userRegistration.isValidEmail() {
+            alertMessage = "Please enter a valid email address."
+            showAlert = true
+            return
+        }
+        
+        // Check if passwords match
+        if !userRegistration.isPasswordValid() {
+            alertMessage = "Passwords must be at least 6 characters long."
+            showAlert = true
+            return
+        }
+        
+        if userRegistration.password != userRegistration.confirmPassword {
+            alertMessage = "Passwords do not match."
+            showAlert = true
+            return
+        }
+        
+        // Firebase sign-up
+        Auth.auth().createUser(withEmail: userRegistration.email, password: userRegistration.password) { authResult, error in
+            if let error = error {
+                alertMessage = "Error during sign up: \(error.localizedDescription)"
+                showAlert = true
+            } else {
+                alertMessage = "Account created successfully!"
+                showAlert = true
+                isSignedUp = true
             }
-        } else {
-            print("Passwords do not match")
         }
     }
 }
